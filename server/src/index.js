@@ -3,8 +3,12 @@ import cors from "cors";
 import dotenv from "dotenv";
 import http from "http";
 import { Server } from "socket.io";
+import { connectDB } from "./config/db.js";
+import authRoutes from "./routes/auth.js";
+import { requireAuth } from "./middleware/auth.js";
 
 dotenv.config();
+connectDB();
 
 const app = express();
 app.use(cors());
@@ -12,6 +16,12 @@ app.use(express.json());
 
 app.get("/api/health", (req, res) => {
   res.json({ ok: true });
+});
+
+app.use("/api/auth", authRoutes);
+
+app.get("/api/me", requireAuth, (req, res) => {
+  res.json({ userId: req.userId });
 });
 
 // Wrap the Express app in a raw HTTP server so Socket.IO can attach to it
