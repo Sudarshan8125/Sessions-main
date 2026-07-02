@@ -1,11 +1,13 @@
 import { useRef, useState, useEffect } from "react";
 import socket from "./lib/socket";
+import api from "./lib/api";
 
 
 // A public STUN server helps each browser discover its own public address
 const ICE_SERVERS = {
   iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
 };
+
 
 function Room() {
   const videoRef = useRef(null);          // our own video
@@ -18,6 +20,7 @@ function Room() {
 
   const [isRecording, setIsRecording] = useState(false);
   const [recordedUrl, setRecordedUrl] = useState("");
+  const [uploadStatus, setUploadStatus] = useState(""); // "", "uploading", "uploaded", "failed"
 
   const [joined, setJoined] = useState(false);
   const [micOn, setMicOn] = useState(true);
@@ -192,11 +195,14 @@ function Room() {
     };
 
     // Fires once when we stop — stitch the chunks into one file
-    recorder.onstop = () => {
-      const blob = new Blob(recordedChunksRef.current, { type: "video/webm" });
-      const url = URL.createObjectURL(blob); // a temporary in-browser URL
-      setRecordedUrl(url);
-    };
+    recorder.onstop = async () => {
+        const blob = new Blob(recordedChunksRef.current, { type: "video/webm" });
+        const url = URL.createObjectURL(blob); // local preview URL
+        setRecordedUrl(url);
+  
+        // Now upload the recording to the server (which pushes it to S3)
+        await uploadRecording(blob);
+      };
 
     recorder.start();
     recorderRef.current = recorder;
@@ -206,6 +212,24 @@ function Room() {
   function stopRecording() {
     recorderRef.current?.stop(); // triggers onstop above
     setIsRecording(false);
+  }
+
+  async function uploadRecording(blob) {
+    try {
+      setUploadStatus("uploading");
+
+      // Build multipart form data: the file + which room it belongs to
+      const formData = new FormData();
+      formData.append("recording", blob, "recording.webm");
+      formData.append("sessionCode", roomId);
+
+      const res = await api.post("/uploads", formData);
+      console.log("Uploaded:", res.data.track.url);
+      setUploadStatus("uploaded");
+    } catch (err) {
+      console.error("Upload failed:", err);
+      setUploadStatus("failed");
+    }
   }
 
   return (
@@ -268,6 +292,9 @@ function Room() {
       {recordedUrl && (
         <div style={{ marginTop: "1rem" }}>
           <p style={{ color: "#888" }}>Your recording:</p>
+          {uploadStatus === "uploading" && <p style={{ color: "#fc0" }}>Uploading to cloud…</p>}
+          {uploadStatus === "uploaded" && <p style={{ color: "#6f6" }}>✓ Uploaded to cloud</p>}
+          {uploadStatus === "failed" && <p style={{ color: "tomato" }}>Upload failed</p>}
           <video
             src={recordedUrl}
             controls
