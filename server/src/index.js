@@ -7,6 +7,7 @@ import { connectDB } from "./config/db.js";
 import authRoutes from "./routes/auth.js";
 import { requireAuth } from "./middleware/auth.js";
 import uploadRoutes from "./routes/uploads.js";
+import sessionRoutes from "./routes/sessions.js";
 
 connectDB();
 
@@ -14,6 +15,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use("/api/uploads", uploadRoutes);
+app.use("/api/sessions", sessionRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({ ok: true });

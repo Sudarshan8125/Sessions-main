@@ -22,13 +22,17 @@ router.post("/", requireAuth, upload.single("recording"), async (req, res) => {
     const { sessionCode } = req.body;
 
     // Find the session this recording belongs to (create one if it doesn't exist)
-    let session = await Session.findOne({ code: sessionCode });
-    if (!session) {
-      session = await Session.create({
-        host: req.userId,
+    // Find THIS user's session for this room code (create if they don't have one yet)
+    let session = await Session.findOne({
         code: sessionCode || "test-room",
+        host: req.userId,
       });
-    }
+      if (!session) {
+        session = await Session.create({
+          host: req.userId,
+          code: sessionCode || "test-room",
+        });
+      }
 
     // Create a Track first, marked "pending"
     const track = await Track.create({
