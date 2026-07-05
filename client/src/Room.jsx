@@ -5,8 +5,33 @@ import api from "./lib/api";
 
 // A public STUN server helps each browser discover its own public address
 const ICE_SERVERS = {
-  iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-};
+    iceServers: [
+      { urls: "stun:stun.l.google.com:19302" },
+      {
+        urls: "stun:stun.relay.metered.ca:80",
+      },
+      {
+        urls: "turn:global.relay.metered.ca:80",
+        username: "3744129045336ad873e2c9b8",
+        credential: "GkDsFV3X8a1Y6nau",
+      },
+      {
+        urls: "turn:global.relay.metered.ca:80?transport=tcp",
+        username: "3744129045336ad873e2c9b8",
+        credential: "GkDsFV3X8a1Y6nau",
+      },
+      {
+        urls: "turn:global.relay.metered.ca:443",
+        username: "3744129045336ad873e2c9b8",
+        credential: "GkDsFV3X8a1Y6nau",
+      },
+      {
+        urls: "turns:global.relay.metered.ca:443?transport=tcp",
+        username: "3744129045336ad873e2c9b8",
+        credential: "GkDsFV3X8a1Y6nau",
+      },
+    ],
+  };
 
 
 function Room() {
