@@ -8,7 +8,7 @@ function App() {
     const saved = localStorage.getItem("user");
     return saved ? JSON.parse(saved) : null;
   });
-  const [view, setView] = useState("room"); // "room" or "dashboard"
+  const [view, setView] = useState("room");
 
   function logout() {
     localStorage.removeItem("token");
@@ -22,22 +22,27 @@ function App() {
 
   return (
     <div>
-      <div
-        style={{
-          padding: "0.5rem 2rem",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          background: "#111",
-        }}
-      >
-        <div style={{ display: "flex", gap: "1rem" }}>
-          <button onClick={() => setView("room")}>Room</button>
-          <button onClick={() => setView("dashboard")}>Dashboard</button>
+      <div className="topbar">
+        <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
+          <div className="brand">Sessions<span>.</span></div>
+          <div className="nav-tabs">
+            <button
+              className={`nav-tab ${view === "room" ? "active" : ""}`}
+              onClick={() => setView("room")}
+            >
+              Room
+            </button>
+            <button
+              className={`nav-tab ${view === "dashboard" ? "active" : ""}`}
+              onClick={() => setView("dashboard")}
+            >
+              Dashboard
+            </button>
+          </div>
         </div>
         <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
-          <span style={{ color: "#888" }}>Logged in as {user.name}</span>
-          <button onClick={logout}>Log out</button>
+          <span className="user-chip">{user.name}</span>
+          <button className="btn-ghost" onClick={logout}>Log out</button>
         </div>
       </div>
 

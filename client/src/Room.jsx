@@ -27,6 +27,9 @@ function Room() {
   const [camOn, setCamOn] = useState(true);
   const [error, setError] = useState("");
 
+  const [recordSeconds, setRecordSeconds] = useState(0);
+  const timerRef = useRef(null);
+
   const roomId =
     new URLSearchParams(window.location.search).get("room") || "test-room";
 
@@ -207,11 +210,26 @@ function Room() {
     recorder.start();
     recorderRef.current = recorder;
     setIsRecording(true);
+
+    // start the on-screen timer
+    setRecordSeconds(0);
+    timerRef.current = setInterval(() => {
+      setRecordSeconds((s) => s + 1);
+    }, 1000);
   }
 
   function stopRecording() {
     recorderRef.current?.stop(); // triggers onstop above
     setIsRecording(false);
+
+    // stop the timer
+    clearInterval(timerRef.current);
+  }
+
+  function formatTime(s) {
+    const m = String(Math.floor(s / 60)).padStart(2, "0");
+    const sec = String(s % 60).padStart(2, "0");
+    return `${m}:${sec}`;
   }
 
   async function uploadRecording(blob) {
@@ -233,82 +251,84 @@ function Room() {
   }
 
   return (
-    <div style={{ padding: "2rem", maxWidth: "960px", margin: "0 auto" }}>
-      <h1>Riverside Clone</h1>
-      <p style={{ color: "#888" }}>Room: {roomId}</p>
+    <div className="studio">
+      {/* Top status bar */}
+      <div className="studio-bar">
+        <span className="pill">Room: {roomId}</span>
+        {isRecording && (
+          <span className="rec-dot">REC {formatTime(recordSeconds)}</span>
+        )}
+        {uploadStatus === "uploading" && (
+          <span className="upload-chip">↑ Uploading…</span>
+        )}
+        {uploadStatus === "uploaded" && (
+          <span className="upload-chip" style={{ color: "var(--success)" }}>
+            ✓ Uploaded to cloud
+          </span>
+        )}
+        {uploadStatus === "failed" && (
+          <span className="upload-chip" style={{ color: "var(--danger)" }}>
+            Upload failed
+          </span>
+        )}
+      </div>
 
-      {error && <p style={{ color: "tomato" }}>{error}</p>}
+      {error && <p className="error-text">{error}</p>}
 
-      <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-        <div style={{ flex: 1, minWidth: "300px" }}>
-          <p style={{ margin: "0 0 0.25rem", color: "#888" }}>You</p>
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            style={{
-              width: "100%",
-              background: "#000",
-              borderRadius: "8px",
-              transform: "scaleX(-1)",
-            }}
-          />
+      {/* Video stage */}
+      <div className="stage">
+        <div className="tile">
+          <video ref={videoRef} autoPlay playsInline muted className="mirror" />
+          <span className="name-tag">You</span>
         </div>
 
-        <div style={{ flex: 1, minWidth: "300px" }}>
-          <p style={{ margin: "0 0 0.25rem", color: "#888" }}>Peer</p>
-          <video
-            ref={remoteVideoRef}
-            autoPlay
-            playsInline
-            style={{
-              width: "100%",
-              background: "#000",
-              borderRadius: "8px",
-            }}
-          />
+        <div className="tile empty">
+          <video ref={remoteVideoRef} autoPlay playsInline />
+          {!joined && <span>Waiting for peer…</span>}
+          <span className="name-tag">Peer</span>
         </div>
       </div>
 
-      <div style={{ marginTop: "1rem", display: "flex", gap: "0.5rem" }}>
+      {/* Control bar */}
+      <div className="control-bar">
         {!joined ? (
-          <button onClick={joinRoom}>Join</button>
+          <button onClick={joinRoom}>Join Studio</button>
         ) : (
           <>
-            <button onClick={toggleMic}>{micOn ? "Mute" : "Unmute"}</button>
-            <button onClick={toggleCam}>
-              {camOn ? "Camera Off" : "Camera On"}
+            <button className={`ctrl ${micOn ? "" : "off"}`} onClick={toggleMic}>
+              {micOn ? "Mic on" : "Mic off"}
             </button>
-            <button onClick={leaveRoom}>Leave</button>
+            <button className={`ctrl ${camOn ? "" : "off"}`} onClick={toggleCam}>
+              {camOn ? "Cam on" : "Cam off"}
+            </button>
             {!isRecording ? (
-              <button onClick={startRecording}>Start Recording</button>
+              <button className="ctrl rec" onClick={startRecording}>
+                ● Record
+              </button>
             ) : (
-              <button onClick={stopRecording}>Stop Recording</button>
+              <button className="ctrl rec" onClick={stopRecording}>
+                ■ Stop {formatTime(recordSeconds)}
+              </button>
             )}
+            <button className="ctrl leave" onClick={leaveRoom}>
+              Leave
+            </button>
           </>
         )}
       </div>
+
+      {/* Local recording preview (kept for you to review before it's in the dashboard) */}
       {recordedUrl && (
-        <div style={{ marginTop: "1rem" }}>
-          <p style={{ color: "#888" }}>Your recording:</p>
-          {uploadStatus === "uploading" && <p style={{ color: "#fc0" }}>Uploading to cloud…</p>}
-          {uploadStatus === "uploaded" && <p style={{ color: "#6f6" }}>✓ Uploaded to cloud</p>}
-          {uploadStatus === "failed" && <p style={{ color: "tomato" }}>Upload failed</p>}
+        <div className="card" style={{ maxWidth: "480px", margin: "1.5rem auto 0" }}>
+          <p className="muted" style={{ marginBottom: "0.5rem" }}>Last recording</p>
           <video
             src={recordedUrl}
             controls
-            style={{ width: "100%", maxWidth: "480px", borderRadius: "8px" }}
+            style={{ width: "100%", borderRadius: "var(--radius-sm)" }}
           />
-          <div style={{ marginTop: "0.5rem" }}>
-            <a href={recordedUrl} download="my-recording.webm" style={{ color: "#6cf" }}>
-              Download recording
-            </a>
-          </div>
         </div>
       )}
     </div>
-    
   );
 }
 
