@@ -33,7 +33,7 @@ const server = http.createServer(app);
 // Create the Socket.IO server, allowing connections from our Vite frontend
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: process.env.CLIENT_URL || "http://localhost:5173",
     methods: ["GET", "POST"],
   },
 });
